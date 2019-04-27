@@ -6,17 +6,17 @@ services:
 branches:
   only:
     - travis
+before_install:
+  - git submodule init && git submodule update
 install:
-  - docker pull clearmatics/zeth-dev:latest 
+  - docker build -t zeth-dev .
   - docker run -ti -p 50051:50051 --name zeth clearmatics/zeth-dev:latest
 
 before_script:
-  - git submodule init && git submodule update
-  - mkdir build && cd build && cmake ..
+  - docker run zeth /bin/sh -c "mkdir build && cd build && cmake .."
 
 script:
-  - make
-  - make check
+  - docker run zeth /bin/sh -c "make && make check"
 
 notifications:
 email: false
