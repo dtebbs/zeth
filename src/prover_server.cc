@@ -81,7 +81,7 @@ public:
   }
 
   Status Prove(
-    ServerContext* context,
+    ServerContext*,
     const ProofInputs* proofInputs,
     ExtendedProof* proof
   ) override {
@@ -202,7 +202,7 @@ void RunServer(
   server->Wait();
 }
 
-int main(int argc, char** argv) {
+int main(int, char**) {
   // We inititalize the curve parameters here
   std::cout << "[DEBUG] Init params" << std::endl;
   ppT::init_public_params();
