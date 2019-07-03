@@ -18,6 +18,8 @@
 
 #include "circuits/notes/note.hpp" // Contains the circuits for the notes
 
+#include "circuits/prfs/prfs.hpp" // Contains the circuits for the PRFs
+
 #include "types/joinsplit.hpp"
 
 #include "zeth.h" // Contains the definitions of the constants we use
@@ -33,6 +35,11 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
         std::shared_ptr<pb_variable<FieldT> > merkle_root;                                  // Merkle root
         std::array<std::shared_ptr<pb_variable<FieldT> >, NumInputs> input_nullifiers;      // List of nullifiers of the notes to spend
         std::array<std::shared_ptr<pb_variable<FieldT> >, NumOutputs> output_commitments;   // List of commitments generated for the new notes
+        std::array<std::shared_ptr<pb_variable<FieldT> >, NumInputs> a_sks;
+        pb_variable<FieldT> h_sig;
+        std::array<std::shared_ptr<pb_variable<FieldT> >, NumInputs> h_is;
+        pb_variable<FieldT> phi;
+        std::array<std::shared_ptr<pb_variable<FieldT> >, NumOutputs> rho_is;
         pb_variable<FieldT> zk_vpub_in;                                                     // Public value that is put into the mix
         pb_variable<FieldT> zk_vpub_out;                                                    // Value that is taken out of the mix
 
@@ -40,6 +47,9 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
         //pb_variable<FieldT> zk_total;                                                       // Total amount transfered in the transaction ; needed if we want to constraint the total amount transfered
         std::array<std::shared_ptr<input_note_gadget<HashT, FieldT>>, NumInputs> input_notes; // Input note gadgets
         std::array<std::shared_ptr<output_note_gadget<FieldT>>, NumOutputs> output_notes;     // Output note gadgets
+        std::array<std::shared_ptr<PRF_pk_gadget<FieldT>>, NumInputs> h_i_gadgets;
+        std::array<std::shared_ptr<PRF_rho_gadget<FieldT>>, NumOutputs> rho_i_gadgets;
+
     public:
         // Make sure that we do not exceed the number of inputs/outputs
         // specified in zeth's configuration file (see: zeth.h file)
@@ -51,8 +61,15 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
                         const std::string &annotation_prefix = "joinsplit_gadget"
         ) : gadget<FieldT>(pb) {
 
-            int nb_inputs = NumInputs + NumOutputs + 1 + 1 + 1;
+            //A JoinSplit proof primary inputs consists of (
+            // rt, nf old, cm_new, v_pub_in, v_pub_out
+            // h_sig, h_i_old
+            //)
+            int nb_inputs = 1 + NumInputs + NumOutputs + 1 + 1 + NumInputs;
             pb.set_input_sizes(nb_inputs);
+
+            // A Join Split description _however_ consists of 
+            // {v_pib_in, v_pib_out, rt, <nf_old<, <cm_new>, epk, randomSeed, <h_i_old>, pi_zk, <cipher>}
 
             // Block dedicated to generate the verifier inputs
             {
@@ -77,9 +94,56 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
                 // Allocate the zk_vpub_out
                 zk_vpub_out.allocate(pb, FMT(this->annotation_prefix, " public value out"));
 
+                h_sig.allocate(pb, FMT(this->annotation_prefix, " transaction hash h_sig"));
+
+                for (size_t i = 0; i < NumInputs; i++) {
+                    h_is[i].reset(new libsnark::pb_variable<FieldT>);
+                    (*h_is[i]).allocate(pb, FMT(this->annotation_prefix, " non malleability h_%zu", i));
+                }
+
             } // End of the block dedicated to generate the verifier inputs
 
+            for (size_t i = 0; i < NumInputs; i++) {
+                a_sks[i].reset(new libsnark::pb_variable<FieldT>);
+                (*a_sks[i]).allocate(pb, FMT(this->annotation_prefix, " a_sk_%zu", i));
+            }
+
+            phi.allocate(pb, FMT(this->annotation_prefix, " nullifier randomness phi"));
+
+            for (size_t i = 0; i < NumOutputs; i++) {
+                rho_is[i].reset(new libsnark::pb_variable<FieldT>);
+                (*rho_is[i]).allocate(pb, FMT(this->annotation_prefix, " nullifier randomness rho_%zu", i));
+            }
+
             //zk_total.allocate(pb, "zk total");
+
+            // Gadget verifying the h_i have been well computed
+            // We keep these gadgets outside of the note to reuse the h_sig pb_variable as well as the a_sk
+            for (size_t i = 0; i < NumInputs; i++)
+            {
+                pb_variable<FieldT> i_pb = get_var(pb, FieldT(i), FMT(this->annotation_prefix, "i_%zu", i));
+                h_i_gadgets[i].reset( new PRF_pk_gadget<FieldT>(
+                    pb,
+                    *a_sks[i],
+                    i_pb,
+                    h_sig,
+                    FMT(this->annotation_prefix, " h_i_gadget_%zu", i)
+                ));
+            }
+            
+            // Gadget verifying the rho_i have been well computed
+            // We keep these gadgets outside of the note to reuse the h_sig pb_variable as well as the phi
+            for (size_t i = 0; i < NumOutputs; i++)
+            {
+                pb_variable<FieldT> i_pb = get_var(pb, FieldT(i), FMT(this->annotation_prefix, "i_%zu", i));
+                rho_i_gadgets[i].reset( new PRF_rho_gadget<FieldT>(
+                    pb,
+                    phi,
+                    i_pb,
+                    h_sig,
+                    FMT(this->annotation_prefix, " rho_i_gadget_%zu", i)
+                ));
+            }
 
             // Input note gadgets for commitments, nullifiers, and spend authority
             for (size_t i = 0; i < NumInputs; i++) {
@@ -87,26 +151,47 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
                     pb,
                     input_nullifiers[i],
                     *merkle_root,
+                    a_sks[i],
                     FMT(this->annotation_prefix, " input_note_gadget_%zu", i)
                 ));
             }
+
 
             for (size_t i = 0; i < NumOutputs; i++) {
                 output_notes[i].reset(new output_note_gadget<FieldT>(
                     pb,
                     output_commitments[i],
+                    rho_is[i],
                     FMT(this->annotation_prefix, " output_note_gadget_%zu", i)
                 ));
             }
         }
 
         void generate_r1cs_constraints() {
-            //merkle_root->generate_r1cs_constraints();
+            //merkle_root->generate_r1cs_constraints();Z
+
+            // Constrain the h_i
+            for (size_t i = 0; i < NumInputs; i++) {
+                h_i_gadgets[i]->generate_r1cs_constraints();
+                this->pb.add_r1cs_constraint(r1cs_constraint<FieldT>(
+                        1,
+                        *h_is[i],
+                        h_i_gadgets[i]->result()
+                    ),
+                    FMT(this->annotation_prefix, " h_i_equality_constraint")
+                );
+            }
+
+            // Constrain the rho_i
+            for (size_t i = 0; i < NumInputs; i++) {
+                rho_i_gadgets[i]->generate_r1cs_constraints();
+            }
 
             // Constrain the JoinSplit inputs
             for (size_t i = 0; i < NumInputs; i++) {
                 input_notes[i]->generate_r1cs_constraints();
             }
+
             // Constrain the JoinSplit outputs
             for (size_t i = 0; i < NumOutputs; i++) {
                 output_notes[i]->generate_r1cs_constraints();
@@ -161,7 +246,10 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
             const std::array<JSInput<FieldT>, NumInputs>& inputs,
             const std::array<ZethNote<FieldT>, NumOutputs>& outputs,
             FieldT vpub_in,
-            FieldT vpub_out
+            FieldT vpub_out,
+            FieldT h_sig_in,
+            FieldT phi_in,
+            std::array<FieldT, NumInputs> h_i
         ) {
 
             // Witness the merkle root
@@ -174,6 +262,10 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
 
             // Witness RHS public value
             this->pb.val(zk_vpub_out) = vpub_out;
+
+            this->pb.val(h_sig) = h_sig_in;
+
+            this->pb.val(phi) = phi_in;
 
             // Compute zk_total out of left_side
             /*
@@ -199,10 +291,13 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
                 size_t address = inputs[i].address;
                 libff::bit_vector address_bits = get_vector_from_bitsAddr(inputs[i].address_bits);
 
+                this->pb.val(*a_sks[i]) = inputs[i].spending_key_a_sk;
+
+                this->pb.val(*h_is[i]) = h_i[i];
+
                 input_notes[i]->generate_r1cs_witness(
                     merkle_path,
                     address_bits,
-                    inputs[i].spending_key_a_sk,
                     inputs[i].note
                 );
 
@@ -210,6 +305,7 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
 
             // Witness the JoinSplit outputs
             for (size_t i = 0; i < NumOutputs; i++) {
+                this->pb.val(*rho_is[i]) = this->pb.val( (*rho_i_gadgets[i]).result() );
 
                 output_notes[i]->generate_r1cs_witness(outputs[i]);
 
@@ -257,6 +353,14 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
             // the public value out
             acc += 1;
 
+            // h_sig
+            acc += 1;
+
+            // h_1..N^old
+            for (size_t i = 0; i < NumOutputs; i++) {
+                acc += 1;
+            }
+            
             return acc;
         }
 

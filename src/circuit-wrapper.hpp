@@ -40,7 +40,11 @@ public:
                             const std::array<ZethNote<FieldT>, NumOutputs>& outputs,
                             FieldT vpub_in,
                             FieldT vpub_out,
-                            provingKeyT<ppT> proving_key);
+                            provingKeyT<ppT> proving_key,
+                            FieldT h_sig,
+                            FieldT phi,
+                            std::array<FieldT, NumInputs> h_i
+                            );
 };
 
 } // libzeth

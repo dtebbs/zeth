@@ -37,6 +37,34 @@ public:
                 const std::string &annotation_prefix = " nf_PRF_gadget");
 };
 
+// PRF to generate the nullifier
+// h_i = sha256(0{i-1}00 || a_sk[:252] || h_sig): See ZCash extended paper, page 57
+// h_i = mimc_hash_(iv_pk)(a_sk, i, h_sig)
+
+template<typename FieldT>
+class PRF_pk_gadget : public MiMC_hash_gadget<FieldT> {
+public:
+    PRF_pk_gadget(libsnark::protoboard<FieldT>& pb,
+                libsnark::pb_variable<FieldT>& a_sk,
+                libsnark::pb_variable<FieldT>& i,
+                libsnark::pb_variable<FieldT>& h_sig,
+                const std::string &annotation_prefix = " pk_PRF_gadget");
+};
+
+// PRF to generate the nullifier
+// rho_i = sha256(0{i-1}10 || phi[:252] || h_sig): See ZCash extended paper, page 57
+// rho_i = mimc_hash_(iv_rho)(phi, i, h_sig)
+
+template<typename FieldT>
+class PRF_rho_gadget : public MiMC_hash_gadget<FieldT> {
+public:
+    PRF_rho_gadget(libsnark::protoboard<FieldT>& pb,
+                libsnark::pb_variable<FieldT>& phi,
+                libsnark::pb_variable<FieldT>& i,
+                libsnark::pb_variable<FieldT>& h_sig,
+                const std::string &annotation_prefix = " rho_PRF_gadget");
+};
+
 } // libzeth
 #include "circuits/prfs/prfs.tcc"
 

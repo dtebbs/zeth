@@ -25,6 +25,10 @@ message ProofInputs {
     repeated ZethNote jsOutputs = 3; // List of output to the JS
     string inPubValue = 4; // Hexadecimal string representing a 32bytes int
     string outPubValue = 5; // Hexadecimal string representing a 32bytes int
+    string hSig = 6; // Hexadecimal string representing a 32bytes int
+    repeated string hi = 7; // List of non malleable tags to the JS
+    string phi = 8; // Hexadecimal string representing a 32bytes int
+
 }
 
 // We comment this message as the primary input is passed as a json string for now

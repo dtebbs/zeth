@@ -145,9 +145,19 @@ libsnark::pb_variable<FieldT> get_iv_pk(libsnark::protoboard<FieldT>& pb) {
 }
 
 template<typename FieldT>
-libsnark::pb_variable<FieldT> get_var(libsnark::protoboard<FieldT>& pb, const std::string &annotation) {
+libsnark::pb_variable<FieldT> get_iv_rho(libsnark::protoboard<FieldT>& pb) {
+    libsnark::pb_variable<FieldT> iv;
+    iv.allocate(pb, "iv_rho");
+    // iv = sha3("Clearmatics_rho")
+    pb.val(iv) = FieldT("78188383047733352344982083600847726127307128081367525822139894928372020657531");
+    return iv;
+}
+
+template<typename FieldT>
+libsnark::pb_variable<FieldT> get_var(libsnark::protoboard<FieldT>& pb, FieldT value, const std::string &annotation) {
     libsnark::pb_variable<FieldT> var;
     var.allocate(pb, annotation);
+    pb.val(var)=value;
     return var;
 }
 

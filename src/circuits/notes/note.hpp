@@ -40,7 +40,8 @@ public:
 // - commitment cm is in the tree of merkle root rt
 template<typename HashT, typename FieldT>
 class input_note_gadget : public note_gadget<FieldT> {
-public:
+private:
+    std::shared_ptr<libsnark::pb_variable<FieldT>> a_sk;                            // Private key
     std::shared_ptr<libsnark::pb_variable<FieldT>> a_pk;                            // Public address ; output of a PRF
     libsnark::pb_variable<FieldT> rho;                                              // Nullifier seed
     std::shared_ptr<libsnark::pb_variable<FieldT>> nf;                              // Nullifier
@@ -58,18 +59,16 @@ public:
     std::shared_ptr<PRF_nf_gadget<FieldT>> expose_nullifiers;                       // Gadget making sure the nullifiers are correctly computed from rho and a_sk
 
 public:
-    libsnark::pb_variable<FieldT> a_sk;                                             // Private key
-
     input_note_gadget(libsnark::protoboard<FieldT>& pb,
                     std::shared_ptr<libsnark::pb_variable<FieldT>> nullifier,       // Note nullifier
                     libsnark::pb_variable<FieldT> rt,                               // Expected merkle root
+                    std::shared_ptr<libsnark::pb_variable<FieldT>> a_sk,
                     const std::string &annotation_prefix = "input_note_gadget");
 
     void generate_r1cs_constraints();
 
     void generate_r1cs_witness(const std::vector<FieldT> path,
                             const libff::bit_vector address_bits,
-                            const FieldT a_sk_in,
                             const ZethNote<FieldT>& note);
 
     // Returns the computed a_pk
@@ -83,8 +82,8 @@ public:
 // Commit to the output notes of the JS
 template<typename FieldT>
 class output_note_gadget : public note_gadget<FieldT> {
-public:
-    libsnark::pb_variable<FieldT> rho;                                              // Nullifier seed
+private:
+    std::shared_ptr<libsnark::pb_variable<FieldT>> rho;                                              // Nullifier seed
     std::shared_ptr<libsnark::pb_variable<FieldT>> a_pk;                            // Public address ; output of a PRF
     std::shared_ptr<libsnark::pb_variable<FieldT>> cm;                              // Note commitment
     std::shared_ptr<cm_gadget<FieldT>> commit_to_outputs_cm;                        // Gadget computing the commitment (leaf)
@@ -95,6 +94,7 @@ public:
     output_note_gadget(
         libsnark::protoboard<FieldT>& pb,
         std::shared_ptr<libsnark::pb_variable<FieldT>> commitment,
+        std::shared_ptr<libsnark::pb_variable<FieldT>> rho,
         const std::string &annotation_prefix = "output_note_gadget");
 
     void generate_r1cs_constraints();

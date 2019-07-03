@@ -9,8 +9,7 @@ namespace libzeth {
 
 //TODO add PRF parent class
 
-// a_pk = sha256(a_sk || 0^256): See Zerocash extended paper, page 22,
-// paragraph "Instantiating the NP statement POUR"
+// a_pk = sha256(1100 || a_sk[:252] || 0^256): See ZCash extended paper, page 57
 // Generating public address addr from secret key a_sk
 template<typename FieldT>
 PRF_addr_a_pk_gadget<FieldT>::PRF_addr_a_pk_gadget(
@@ -18,14 +17,13 @@ PRF_addr_a_pk_gadget<FieldT>::PRF_addr_a_pk_gadget(
         libsnark::pb_variable<FieldT>& a_sk,
         const std::string &annotation_prefix
       ) :
-      MiMC_hash_gadget<FieldT>(pb, {a_sk, get_var(pb, "zero_var")}, get_iv_add(pb), annotation_prefix)
+      MiMC_hash_gadget<FieldT>(pb, {a_sk, get_var(pb, FieldT(0), "zero_var")}, get_iv_add(pb), annotation_prefix)
 {
   //
 }
 
 // PRF to generate the nullifier
-// nf = sha256(a_sk || 01 || [rho]_254): See Zerocash extended paper, page 22
-// TODO: add clarification
+// nf = sha256(1110 || a_sk[:252] || rho): See ZCash extended paper, page 57
 template<typename FieldT>
 PRF_nf_gadget<FieldT>::PRF_nf_gadget(
         libsnark::protoboard<FieldT>& pb,
@@ -36,6 +34,35 @@ PRF_nf_gadget<FieldT>::PRF_nf_gadget(
 {
   //
 }
+
+// PRF to generate the nullifier
+// h_i = sha256(0{i-1}00 || a_sk[:252] || h_sig): See ZCash extended paper, page 57
+template<typename FieldT>
+PRF_pk_gadget<FieldT>::PRF_pk_gadget(
+        libsnark::protoboard<FieldT>& pb,
+        libsnark::pb_variable<FieldT>& a_sk,
+        libsnark::pb_variable<FieldT>& i,
+        libsnark::pb_variable<FieldT>& h_sig,
+        const std::string &annotation_prefix) :
+      MiMC_hash_gadget<FieldT>(pb, {a_sk, i, h_sig}, get_iv_pk(pb), annotation_prefix)
+{
+  //
+}
+
+// PRF to generate the nullifier
+// rho_i = sha256(0{i-1}10 || phi[:252] || h_sig): See ZCash extended paper, page 57
+template<typename FieldT>
+PRF_rho_gadget<FieldT>::PRF_rho_gadget(
+        libsnark::protoboard<FieldT>& pb,
+        libsnark::pb_variable<FieldT>& phi,
+        libsnark::pb_variable<FieldT>& i,
+        libsnark::pb_variable<FieldT>& h_sig,
+        const std::string &annotation_prefix) :
+      MiMC_hash_gadget<FieldT>(pb, {phi, i, h_sig}, get_iv_rho(pb), annotation_prefix)
+{
+  //
+}
+
 
 } //libzeth
 

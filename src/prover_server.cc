@@ -116,6 +116,19 @@ public:
         jsOutputs[i] = parsedOutput;
       }
 
+      std::cout << "[DEBUG] Process non malleability variables of the JoinSplit" << std::endl;
+      FieldT h_sig = string_to_field<FieldT>(proofInputs->hsig());
+
+      std::cout << "[DEBUG] Process phi of the JoinSplit" << std::endl;
+      FieldT phi = string_to_field<FieldT>(proofInputs->phi());
+
+      std::cout << "[DEBUG] Process every hi of the JoinSplit" << std::endl;
+      std::array<FieldT, ZETH_NUM_JS_INPUTS> jsHi;
+      for(int i = 0; i < ZETH_NUM_JS_INPUTS; i++) {
+        FieldT h_i = string_to_field<FieldT>(proofInputs->hi(i));
+        jsHi[i] = h_i;
+      }
+
       std::cout << "[DEBUG] Data parsed successfully" << std::endl;
       std::cout << "[DEBUG] Generating the proof..." << std::endl;
       extended_proof<ppT> ext_proof = this->prover.prove(
@@ -124,7 +137,10 @@ public:
         jsOutputs,
         vpub_in,
         vpub_out,
-        this->keypair.pk
+        this->keypair.pk,
+        h_sig,
+        phi,
+        jsHi
       );
 
       std::cout << "[DEBUG] Displaying the extended proof" << std::endl;

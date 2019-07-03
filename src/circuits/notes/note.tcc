@@ -35,11 +35,11 @@ template<typename HashT, typename FieldT>
 input_note_gadget<HashT, FieldT>::input_note_gadget(libsnark::protoboard<FieldT>& pb,
                                                 std::shared_ptr<libsnark::pb_variable<FieldT>> nullifier,
                                                 libsnark::pb_variable<FieldT> rt,                           // Expected merkle_root
+                                                std::shared_ptr<libsnark::pb_variable<FieldT>> a_sk,
                                                 const std::string &annotation_prefix
 ) : note_gadget<FieldT>(pb, annotation_prefix)
 {
-    // Allocates a_sk and a_pk
-    a_sk.allocate(pb, "a_sk");
+    // Allocates a_pk
     a_pk.reset(new libsnark::pb_variable<FieldT>);
     (*a_pk).allocate(pb, "a_pk");
 
@@ -56,14 +56,14 @@ input_note_gadget<HashT, FieldT>::input_note_gadget(libsnark::protoboard<FieldT>
     // is correctly computed from a_sk
     spend_authority.reset(new PRF_addr_a_pk_gadget<FieldT>(
         pb,
-        a_sk
+        *a_sk
     ));
 
     // Call to the "PRF_nf_gadget" to make sure the nullifier
     // is correctly computed from a_sk and rho
     expose_nullifiers.reset(new PRF_nf_gadget<FieldT>(
         pb,
-        a_sk,
+        *a_sk,
         rho
     ));
 
@@ -148,7 +148,6 @@ template<typename HashT, typename FieldT>
 void input_note_gadget<HashT, FieldT>::generate_r1cs_witness(
     const std::vector<FieldT> path,
     const libff::bit_vector address_bits,
-    const FieldT a_sk_in,
     const ZethNote<FieldT>& note
 ) {
 
@@ -157,9 +156,6 @@ void input_note_gadget<HashT, FieldT>::generate_r1cs_witness(
 
     // Witness rho for the input note
     this->pb.val(rho) = note.rho;
-
-    // Witness a_sk for the input
-    this->pb.val(a_sk) = a_sk_in;
 
     // Generate witness of parent gadget
     note_gadget<FieldT>::generate_r1cs_witness(note);
@@ -259,11 +255,11 @@ libsnark::pb_variable<FieldT> input_note_gadget<HashT, FieldT>::get_nf() const {
 template<typename FieldT>
 output_note_gadget<FieldT>::output_note_gadget(libsnark::protoboard<FieldT>& pb,
                                             std::shared_ptr<libsnark::pb_variable<FieldT>> commitment,
+                                            std::shared_ptr<libsnark::pb_variable<FieldT>> rho,
                                             const std::string &annotation_prefix
 ) : note_gadget<FieldT>(pb, annotation_prefix)
 {
-    // Allocates rho and a_pk
-    rho.allocate(pb, "rho");
+    // Allocates a_pk
     a_pk.reset(new libsnark::pb_variable<FieldT>);
     (*a_pk).allocate(pb, "a_pk");
 
@@ -274,7 +270,7 @@ output_note_gadget<FieldT>::output_note_gadget(libsnark::protoboard<FieldT>& pb,
     commit_to_outputs_cm.reset(new cm_gadget<FieldT>(
         pb,
         *a_pk,
-        rho,
+        *rho,
         this->r_trap,
         this->value
     ));
@@ -292,9 +288,6 @@ template<typename FieldT>
 void output_note_gadget<FieldT>::generate_r1cs_witness(const ZethNote<FieldT>& note) {
     // Generate witness of the parent gadget
     note_gadget<FieldT>::generate_r1cs_witness(note);
-
-    // Witness rho with the note information
-    this->pb.val(rho) = note.rho;
 
     // Witness a_pk with note information
     this->pb.val(*a_pk) = note.a_pk;
