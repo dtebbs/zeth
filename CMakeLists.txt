@@ -76,7 +76,15 @@ option(
   ON
 )
 
-if(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if(APPLE)
+  # These must be disabled to make dependencies build on macos
+  set(MULTICORE OFF)
+  set(WITH_PROCPS OFF)
+  set(WITH_SUPERCOP OFF CACHE BOOL "Build libff with supercop")
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang$")
+
   # Common compilation flags and warning configuration
   # The CMAKE_CXX_FLAGS variable allows to change the compiler settings
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wfatal-errors -pthread")
