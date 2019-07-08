@@ -20,6 +20,8 @@ template<typename FieldT> libsnark::pb_variable<FieldT> get_iv_cm(libsnark::prot
 template<typename FieldT> libsnark::pb_variable<FieldT> get_iv_add(libsnark::protoboard<FieldT>& pb);
 template<typename FieldT> libsnark::pb_variable<FieldT> get_iv_sn(libsnark::protoboard<FieldT>& pb);
 template<typename FieldT> libsnark::pb_variable<FieldT> get_iv_pk(libsnark::protoboard<FieldT>& pb);
+template<typename FieldT> libsnark::pb_variable<FieldT> get_var(libsnark::protoboard<FieldT>& pb, const std::string &annotation);
+template<typename FieldT> libsnark::pb_variable<FieldT> get_var(libsnark::protoboard<FieldT>& pb, FieldT value, const std::string &annotation);
 
 template<typename FieldT> libsnark::pb_variable<FieldT> get_var(libsnark::protoboard<FieldT>& pb, FieldT value= FieldT("0"), const std::string &annotation = "var");
 } // libzeth
