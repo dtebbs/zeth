@@ -118,9 +118,16 @@ void input_note_gadget<HashT, FieldT>::generate_r1cs_constraints() {
     // Generates constraints of parent gadget
     note_gadget<FieldT>::generate_r1cs_constraints();
 
-    // Generates constraints of the a_pk gadget
+    // Generates constraints of the a_pk gadget and check note gadget is the same
     spend_authority->generate_r1cs_constraints();
-
+    this->pb.add_r1cs_constraint(libsnark::r1cs_constraint<FieldT>(
+            *a_pk,
+            1,
+            spend_authority->result()
+        ),
+        FMT(this->annotation_prefix, " wrap_constraint_mkpath_dummy_inputs")
+    );
+    
     // Generates constraints of nf gadget
     expose_nullifiers->generate_r1cs_constraints();
 
@@ -162,6 +169,7 @@ void input_note_gadget<HashT, FieldT>::generate_r1cs_witness(
 
     // Witness a_pk for a_sk with PRF_addr
     spend_authority->generate_r1cs_witness();
+    this->pb.val(*a_pk) = this->pb.val(spend_authority->result());
 
     // Witness the nullifier for the input note and fill nf's value
     expose_nullifiers->generate_r1cs_witness();

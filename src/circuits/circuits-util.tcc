@@ -154,10 +154,9 @@ libsnark::pb_variable<FieldT> get_iv_rho(libsnark::protoboard<FieldT>& pb) {
 }
 
 template<typename FieldT>
-libsnark::pb_variable<FieldT> get_var(libsnark::protoboard<FieldT>& pb, FieldT value, const std::string &annotation) {
+libsnark::pb_variable<FieldT> get_var(libsnark::protoboard<FieldT>& pb, const std::string &annotation) {
     libsnark::pb_variable<FieldT> var;
     var.allocate(pb, annotation);
-    pb.val(var)=value;
     return var;
 }
 
