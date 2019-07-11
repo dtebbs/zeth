@@ -1,4 +1,6 @@
+from random import randint
 import zethGRPC
+from zethConstants import ZETH_MIMC_PRIME
 
 # Keystore for the tests
 def initTestKeystore():
@@ -118,7 +120,9 @@ def getDummyMerklePath(length):
 
 def getDummyInput(recipient_apk, recipient_ask):
     zero_wei_hex = "0000000000000000"
-    dummy_note = zethGRPC.createZethNote(zethGRPC.noteRandomness(), recipient_apk, zero_wei_hex)
+    hsig_fake = randint(0, ZETH_MIMC_PRIME-1)
+    phi_fake = randint(0, ZETH_MIMC_PRIME-1)
+    dummy_note = zethGRPC.createZethNote(zethGRPC.noteRandomness(0, phi_fake, hsig_fake), recipient_apk, zero_wei_hex)
     dummy_note_nullifier = zethGRPC.computeNullifier(dummy_note, recipient_ask)
     dummy_note_address = 7
     return (dummy_note, dummy_note_nullifier, dummy_note_address)

@@ -15,6 +15,7 @@ def bob_deposit(test_grpc_endpoint, mixer_instance, mk_root, bob_eth_address, ke
     bob_apk = keystore["Bob"]["AddrPk"]["aPK"]
     bob_ask = keystore["Bob"]["AddrSk"]["aSK"]
     # Create the JoinSplit dummy inputs for the deposit
+
     (input_note1, input_nullifier1, input_address1) = zethMock.getDummyInput(bob_apk, bob_ask)
     (input_note2, input_nullifier2, input_address2) = zethMock.getDummyInput(bob_apk, bob_ask)
     dummy_mk_path = zethMock.getDummyMerklePath(mk_tree_depth)
@@ -25,10 +26,11 @@ def bob_deposit(test_grpc_endpoint, mixer_instance, mk_root, bob_eth_address, ke
         input_note1,
         input_address1,
         dummy_mk_path,
+        bob_ask, # sender 1
         input_note2,
         input_address2,
         dummy_mk_path,
-        bob_ask, # sender
+        bob_ask, # sender 2
         bob_apk, # recipient1
         bob_apk, # recipient2
         zethGRPC.int64ToHexadecimal(Web3.toWei('2', 'ether')), # value output note 1
@@ -72,6 +74,7 @@ def bob_to_charlie(test_grpc_endpoint, mixer_instance, mk_root, mk_path1, input_
         input_note1,
         input_address1,
         mk_path1,
+        bob_ask, # sender
         input_note2,
         input_address2,
         dummy_mk_path,
@@ -117,6 +120,7 @@ def charlie_withdraw(test_grpc_endpoint, mixer_instance, mk_root, mk_path1, inpu
         input_note1,
         input_address1,
         mk_path1,
+        charlie_ask, # sender
         input_note2,
         input_address2,
         dummy_mk_path,

@@ -34,13 +34,11 @@ TEST(TestNoteCircuits, TestInputNoteGadget) {
     libsnark::protoboard<FieldT> pb;
     std::ostream &stream = std::cout;
 
-
-
-    libff::enter_block("[BEGIN] Initialize the coins' data (nullifier, a_sk and a_pk, cm, rho)", true);
+    libff::enter_block("[BEGIN] Initialize the output coins' data (a_pk, cm, rho)", true);
     // Let's choose a_sk = mimc_hash([0], sha3("Clearmatics"))
     FieldT a_sk = FieldT("18834251028175908666459239027856614524890385928194459012149074634190864282942");
     // a_pk = mimc_hash([a_sk, 0], sha3("Clearmatics_add"))
-    FieldT a_pk = FieldT("6128614742405989074277153726075123944014877409086115761607014142791413540419");
+    FieldT a_pk = FieldT("5387907419355715653531038695566357046482139005118304712469340438697294642611");
 
     // Let's choose r_trap = mimc_hash([1], sha3("Clearmatics"))
     FieldT r_trap = FieldT("6576838732374919021860119342200398901974877797242970520445052250557344565821");
@@ -52,11 +50,9 @@ TEST(TestNoteCircuits, TestInputNoteGadget) {
 
     FieldT value = FieldT("100");
 
-    // cm = mimc_hash({a_pk, rho, value}, r_trap)
-    FieldT cm = FieldT("18416395087334841172449280676729148710756704299103180316338003405044212245262");
-    libff::leave_block("[END] Initialize the coins' data (nullifier, a_sk and a_pk, cm, rho)", true);
-
-
+    // cm = mimc_hash(a_pk, rho, r_trap, value)
+    FieldT cm = FieldT("7696443061196341087326334761452156208417519921123230974759309762690342959594");
+    libff::leave_block("[END] Initialize the output coins' data (a_pk, cm, rho)", true);
 
     libff::enter_block("[BEGIN] Setup a local merkle tree and append our commitment to it", true);
 
@@ -89,11 +85,17 @@ TEST(TestNoteCircuits, TestInputNoteGadget) {
     (*root_digest).allocate(pb, "root");
     pb.val(*root_digest) = updated_root_value;
 
+    std::shared_ptr<libsnark::pb_variable<FieldT>> ask_digest;
+    ask_digest.reset(new libsnark::pb_variable<FieldT>);
+    (*ask_digest).allocate(pb, "ask");
+    pb.val(*ask_digest) = a_sk;
+
     std::shared_ptr<input_note_gadget<HashT, FieldT>> input_note_g  = std::shared_ptr<input_note_gadget<HashT, FieldT>>(
         new input_note_gadget<HashT, FieldT>(
             pb,
             nullifier_digest,
-            *root_digest
+            *root_digest,
+            ask_digest
         )
     );
     std::cout << "root digest: " << updated_root_value << std::endl;
@@ -113,9 +115,11 @@ TEST(TestNoteCircuits, TestInputNoteGadget) {
     input_note_g->generate_r1cs_witness(
         path_values,
         address_bits,
-        a_sk,
         note
     );
+    std::cout << "expected apk: " << pb.val(input_note_g->get_a_pk()) << std::endl;
+    std::cout << "expected nf: " << pb.val(input_note_g->get_nf()) << std::endl;
+
     libff::leave_block("[END] Data conversion to generate a witness of the note gadget", true);
 
     bool is_valid_witness = pb.is_satisfied();
@@ -128,13 +132,11 @@ TEST(TestNoteCircuits, TestOutputNoteGadget) {
     libsnark::protoboard<FieldT> pb;
     std::ostream &stream = std::cout;
 
-
-
     libff::enter_block("[BEGIN] Initialize the output coins' data (a_pk, cm, rho)", true);
     // Let's choose a_sk = mimc_hash([0], sha3("Clearmatics"))
     FieldT a_sk = FieldT("18834251028175908666459239027856614524890385928194459012149074634190864282942");
     // a_pk = mimc_hash([a_sk, 0], sha3("Clearmatics_add"))
-    FieldT a_pk = FieldT("6128614742405989074277153726075123944014877409086115761607014142791413540419");
+    FieldT a_pk = FieldT("5387907419355715653531038695566357046482139005118304712469340438697294642611");
 
     // Let's choose r_trap = mimc_hash([1], sha3("Clearmatics"))
     FieldT r_trap = FieldT("6576838732374919021860119342200398901974877797242970520445052250557344565821");
@@ -147,7 +149,7 @@ TEST(TestNoteCircuits, TestOutputNoteGadget) {
     FieldT value = FieldT("100");
 
     // cm = mimc_hash(a_pk, rho, r_trap, value)
-    FieldT cm = FieldT("18416395087334841172449280676729148710756704299103180316338003405044212245262");
+    FieldT cm = FieldT("7696443061196341087326334761452156208417519921123230974759309762690342959594");
     libff::leave_block("[END] Initialize the output coins' data (a_pk, cm, rho)", true);
 
 
@@ -157,12 +159,21 @@ TEST(TestNoteCircuits, TestOutputNoteGadget) {
     commitment.reset(new libsnark::pb_variable<FieldT>);
     (*commitment).allocate(pb, "cm");
 
+    std::shared_ptr<libsnark::pb_variable<FieldT> > rho_digest;
+    rho_digest.reset(new libsnark::pb_variable<FieldT>);
+    (*rho_digest).allocate(pb, "rho");
+    std::cout << "0" << std::endl;
+
+
     std::shared_ptr<output_note_gadget<FieldT>> output_note_g  = std::shared_ptr<output_note_gadget<FieldT>>(
         new output_note_gadget<FieldT>(
             pb,
-            commitment
+            commitment,
+            rho_digest
         )
     );
+
+    std::cout << "1" << std::endl;
 
     // Create a note from the coin's data
     ZethNote<FieldT> note(
@@ -172,10 +183,19 @@ TEST(TestNoteCircuits, TestOutputNoteGadget) {
         r_trap
     );
 
+    std::cout << "2" << std::endl;
+
+
     output_note_g->generate_r1cs_constraints();
+
+    std::cout << "0" << std::endl;
+
+
     output_note_g->generate_r1cs_witness(
         note
     );
+    std::cout << "expected cm: " << pb.val(output_note_g->get_cm()) << std::endl;
+
     libff::leave_block("[END] Data conversion to generate a witness of the note gadget", true);
 
 

@@ -143,6 +143,12 @@ public:
         jsHi
       );
 
+      std::cout << "[DEBUG] Proof verifies?" << std::endl;
+      // Get the verification key
+      bool res = libzeth::verify(ext_proof, this->keypair.vk);
+      std::cout << "Does the proof verify? " << res << std::endl;
+
+
       std::cout << "[DEBUG] Displaying the extended proof" << std::endl;
       ext_proof.dump_proof();
       ext_proof.dump_primary_inputs();

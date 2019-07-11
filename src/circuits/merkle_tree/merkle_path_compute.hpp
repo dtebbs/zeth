@@ -8,6 +8,8 @@
 
 #include "snarks_alias.hpp"
 #include "merkle_path_selector.hpp"
+#include "circuits/circuits-util.hpp"
+
 
 namespace libzeth {
 

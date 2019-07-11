@@ -65,7 +65,7 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
             // rt, nf old, cm_new, v_pub_in, v_pub_out
             // h_sig, h_i_old
             //)
-            int nb_inputs = 1 + NumInputs + NumOutputs + 1 + 1 + NumInputs;
+            int nb_inputs = 1 + NumInputs + NumOutputs + 1 + 1 + 1 + NumInputs;
             pb.set_input_sizes(nb_inputs);
 
             // A Join Split description _however_ consists of 
@@ -251,7 +251,6 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
             FieldT phi_in,
             std::array<FieldT, NumInputs> h_i
         ) {
-
             // Witness the merkle root
             this->pb.val(*merkle_root) = rt ;
 
@@ -293,6 +292,8 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
 
                 this->pb.val(*a_sks[i]) = inputs[i].spending_key_a_sk;
 
+                h_i_gadgets[i]->generate_r1cs_witness();
+
                 this->pb.val(*h_is[i]) = h_i[i];
 
                 input_notes[i]->generate_r1cs_witness(
@@ -305,10 +306,11 @@ class joinsplit_gadget : libsnark::gadget<FieldT> {
 
             // Witness the JoinSplit outputs
             for (size_t i = 0; i < NumOutputs; i++) {
-                this->pb.val(*rho_is[i]) = this->pb.val( (*rho_i_gadgets[i]).result() );
+                rho_i_gadgets[i]->generate_r1cs_witness();
+
+                this->pb.val(*rho_is[i]) = this->pb.val( rho_i_gadgets[i]->result() );
 
                 output_notes[i]->generate_r1cs_witness(outputs[i]);
-
             }
 
             // [SANITY CHECK] Ensure that the intended root

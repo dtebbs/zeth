@@ -246,6 +246,9 @@ void input_note_gadget<HashT, FieldT>::generate_r1cs_witness(
 
     // Witness merkle tree authentication path
     check_membership->generate_r1cs_witness();
+    std::cout << "check membership: " << check_membership->is_valid() << std::endl;
+
+
 }
 
 template<typename HashT, typename FieldT>
@@ -263,13 +266,16 @@ libsnark::pb_variable<FieldT> input_note_gadget<HashT, FieldT>::get_nf() const {
 template<typename FieldT>
 output_note_gadget<FieldT>::output_note_gadget(libsnark::protoboard<FieldT>& pb,
                                             std::shared_ptr<libsnark::pb_variable<FieldT>> commitment,
-                                            std::shared_ptr<libsnark::pb_variable<FieldT>> rho,
+                                            std::shared_ptr<libsnark::pb_variable<FieldT>> rho_in,
                                             const std::string &annotation_prefix
 ) : note_gadget<FieldT>(pb, annotation_prefix)
 {
     // Allocates a_pk
     a_pk.reset(new libsnark::pb_variable<FieldT>);
     (*a_pk).allocate(pb, "a_pk");
+
+    // set rho
+    rho = rho_in;
 
     // Set the commitment
     cm = commitment;
@@ -300,9 +306,11 @@ void output_note_gadget<FieldT>::generate_r1cs_witness(const ZethNote<FieldT>& n
     // Witness a_pk with note information
     this->pb.val(*a_pk) = note.a_pk;
 
-    commit_to_outputs_cm->generate_r1cs_witness();
-    this->pb.val(*cm) = this->pb.val(commit_to_outputs_cm->result());
+    this->pb.val(*rho) = note.rho;
 
+    commit_to_outputs_cm->generate_r1cs_witness();
+
+    this->pb.val(*cm) = this->pb.val(commit_to_outputs_cm->result());
 }
 
 template<typename FieldT>

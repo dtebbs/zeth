@@ -17,7 +17,7 @@ PRF_addr_a_pk_gadget<FieldT>::PRF_addr_a_pk_gadget(
         libsnark::pb_variable<FieldT>& a_sk,
         const std::string &annotation_prefix
       ) :
-      MiMC_hash_gadget<FieldT>(pb, {get_var(pb, FieldT("0"), "zero_var")}, a_sk, "clearmatics_add", annotation_prefix)
+      MiMC_hash_gadget<FieldT>(pb, {get_var(pb, FieldT("0"), "zero_var")}, a_sk, get_iv_add(), annotation_prefix)
 {
   //
 }
@@ -30,7 +30,7 @@ PRF_nf_gadget<FieldT>::PRF_nf_gadget(
         libsnark::pb_variable<FieldT>& a_sk,
         libsnark::pb_variable<FieldT>& rho,
         const std::string &annotation_prefix) :
-      MiMC_hash_gadget<FieldT>(pb, {rho}, a_sk, "clearmatics_sn", annotation_prefix)
+      MiMC_hash_gadget<FieldT>(pb, {rho}, a_sk, get_iv_sn(), annotation_prefix)
 {
   //
 }
@@ -44,7 +44,7 @@ PRF_pk_gadget<FieldT>::PRF_pk_gadget(
         libsnark::pb_variable<FieldT>& i,
         libsnark::pb_variable<FieldT>& h_sig,
         const std::string &annotation_prefix) :
-      MiMC_hash_gadget<FieldT>(pb, {a_sk, i, h_sig}, get_iv_pk(pb), annotation_prefix)
+      MiMC_hash_gadget<FieldT>(pb, {h_sig}, a_sk, get_iv_pk(pb.val(i)), annotation_prefix)
 {
   //
 }
@@ -58,7 +58,7 @@ PRF_rho_gadget<FieldT>::PRF_rho_gadget(
         libsnark::pb_variable<FieldT>& i,
         libsnark::pb_variable<FieldT>& h_sig,
         const std::string &annotation_prefix) :
-      MiMC_hash_gadget<FieldT>(pb, {phi, i, h_sig}, get_iv_rho(pb), annotation_prefix)
+      MiMC_hash_gadget<FieldT>(pb, {h_sig}, phi, get_iv_rho(pb.val(i)), annotation_prefix)
 {
   //
 }

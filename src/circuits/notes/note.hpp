@@ -83,7 +83,7 @@ public:
 template<typename FieldT>
 class output_note_gadget : public note_gadget<FieldT> {
 private:
-    std::shared_ptr<libsnark::pb_variable<FieldT>> rho;                                              // Nullifier seed
+    std::shared_ptr<libsnark::pb_variable<FieldT>> rho;                             // Nullifier seed
     std::shared_ptr<libsnark::pb_variable<FieldT>> a_pk;                            // Public address ; output of a PRF
     std::shared_ptr<libsnark::pb_variable<FieldT>> cm;                              // Note commitment
     std::shared_ptr<cm_gadget<FieldT>> commit_to_outputs_cm;                        // Gadget computing the commitment (leaf)
@@ -94,7 +94,7 @@ public:
     output_note_gadget(
         libsnark::protoboard<FieldT>& pb,
         std::shared_ptr<libsnark::pb_variable<FieldT>> commitment,
-        std::shared_ptr<libsnark::pb_variable<FieldT>> rho,
+        std::shared_ptr<libsnark::pb_variable<FieldT>> rho_in,
         const std::string &annotation_prefix = "output_note_gadget");
 
     void generate_r1cs_constraints();

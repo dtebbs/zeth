@@ -30,14 +30,14 @@ class MiMC7:
             res = self.MiMCRound(res, key,  self.toInt(round_constant))
         return (res + key) % self.prime
 
-    def hash(self, messages, iv):
+    def hash(self, messages, iv, rc=iv):
         hash = 0
         key = self.toInt(iv) % self.prime
         if len(messages) == 0:
             return
         else:
             for i in range(len(messages)):
-                hash = self.encrypt(messages[i], key) % self.prime
+                hash = self.encrypt(messages[i], key, rc) % self.prime
                 key = ( self.toInt(messages[i]) + hash + key) % self.prime
             return key
 
