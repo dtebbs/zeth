@@ -190,7 +190,7 @@ def computeHSig(randomSeed, old_nfs, joinSplitPubKey):
         else:
             print("computeHsig: input error")
 
-    h_sig = m.hash(inputs, randomSeed)
+    h_sig = m.hash(inputs, randomSeed, "clearmatics_hsig")
 
     return hex(h_sig)[2:]
 

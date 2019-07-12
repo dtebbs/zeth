@@ -7,8 +7,6 @@
 
 namespace libzeth {
 
-//TODO add PRF parent class
-
 // a_pk = sha256(1100 || a_sk[:252] || 0^256): See ZCash extended paper, page 57
 // Generating public address addr from secret key a_sk
 template<typename FieldT>
