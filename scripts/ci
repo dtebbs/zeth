@@ -23,9 +23,10 @@ function build() {
     . setup_env.sh
     mkdir -p build
     cd build
-    cmake -DCMAKE_BUILD_TYPE=${build_type} ..
+    cmake -DFAST_TESTS_ONLY=ON -DCMAKE_BUILD_TYPE=${build_type} ..
 
-    make -j 2
+    make -j 2 all build_tests
+    make -j 2 check
 }
 
 function build_release() {
