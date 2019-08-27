@@ -612,10 +612,13 @@ bool TestValidJS2In2Deposit(
     return res;
 }
 
+
 bool TestInvalidJS2In2(
     CircuitWrapper<FieldT, HashT, HashTreeT, ppT, 2, 2> &prover,
     libzeth::keyPairT<ppT> keypair)
 {
+    int i;
+
     // --- General setup for the tests --- //
     libff::print_header("Starting test: IN => v_pub = 0xFA80001400000000, "
                         "note0 = 0x0, note1 = 0x0 || OUT => v_pub = 0x0, note0 "
